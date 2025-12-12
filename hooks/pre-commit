@@ -1,0 +1,32 @@
+#!/bin/bash
+
+# This script is used to run all pre-commit hooks which are located in the
+# .git/hooks/pre-commit.d/ directory.
+# Scripts are executed in alphabetical order.
+
+HOOKS_PATH="$(pwd)/$(dirname "$0")/pre-commit.d"
+
+# check agains which commit diff should be checked
+# This code snippet is taken from the git sample pre-commit hook
+if git rev-parse --verify HEAD >/dev/null 2>&1                                  
+then                                                                            
+    against=HEAD                                                                
+else                                                                            
+    # Initial commit: diff against an empty tree object                         
+    against=$(git hash-object -t tree /dev/null)                                
+fi  
+
+# Now get full diff which will be commited
+# Let's only check files that are being (A)dded, (M)odified or Changed (T)
+diff=$(git diff --cached --diff-filter=AMT $against)
+
+for hook in $HOOKS_PATH/*; do
+    "$hook" "$diff"
+    RESULT=$?
+    if [ $RESULT != 0 ]; then
+        echo "pre-commit.d/$hook returned non-zero: $RESULT, abort commit"
+        exit $RESULT
+    fi
+done
+
+exit 0
