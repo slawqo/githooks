@@ -78,7 +78,7 @@ on that propose some initial commit message draft.
 
 
 def is_debug_enabled():
-    debug_flag = os.environ.get(DEBUG_FLAG)
+    debug_flag = os.environ.get(DEBUG_FLAG, "")
     return debug_flag.lower() in ["1", "yes", "true"]
 
 

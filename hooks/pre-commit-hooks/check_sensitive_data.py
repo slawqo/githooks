@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 
 import json
+import os
 import sys
-from tkinter import W
 
 import ollama
+
+DEBUG_FLAG = "DEBUG_GITHOOKS"
 
 LLM_MODEL="llama3.1"
 LLM_URL="http://localhost:11434"
@@ -149,6 +151,11 @@ sensitive data.
 """
 
 
+def is_debug_enabled():
+    debug_flag = os.environ.get(DEBUG_FLAG, "")
+    return debug_flag.lower() in ["1", "yes", "true"]
+
+
 def get_diff():
     if len(sys.argv) < 2:
         # no diff provided, nothing to check
@@ -181,16 +188,19 @@ def main():
     try:
         response_json = json.loads(llm_response.message.content)
     except json.JSONDecodeError:
-        print(f"Error: Invalid JSON response: {llm_response.message.content}")
+        if is_debug_enabled():
+            print(f"Error: Invalid JSON response: {llm_response.message.content}")
         # Don't block commit if JSON is not valid
         exit(0)
+
+    if is_debug_enabled():
+        print("--------------------------------")
+        print(f"Reasoning: {response_json['reasoning']}")
+        print("--------------------------------")
 
     if response_json["status"] == "OK":
         exit(0)
 
-    print("--------------------------------")
-    print(f"Reasoning: {response_json['reasoning']}")
-    print("--------------------------------")
     print("Sensitive data found:")
     for item in response_json["sensitive_data"]:
         print(f"  - {item['file_path']}:{item['line_number']} - {item['sensitive_data']}")
