@@ -4,7 +4,6 @@
 # .git/hooks/pre-commit.d/ directory.
 # Scripts are executed in alphabetical order.
 
-set -x
 HOOKS_PATH="$(pwd)/$(dirname "$0")/prepare-commit-msg.d"
 
 # Those are input arguments for for the prepare-commit-msg hook according to the 
