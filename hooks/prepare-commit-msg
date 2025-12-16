@@ -1,0 +1,44 @@
+#!/bin/bash
+
+# This script is used to run all pre-commit hooks which are located in the
+# .git/hooks/pre-commit.d/ directory.
+# Scripts are executed in alphabetical order.
+
+set -x
+HOOKS_PATH="$(pwd)/$(dirname "$0")/prepare-commit-msg.d"
+
+# Those are input arguments for for the prepare-commit-msg hook according to the 
+# git documentation:
+# https://git-scm.com/docs/githooks#_prepare_commit_msg
+COMMIT_MSG_FILE=$1
+COMMIT_SOURCE=$2
+SHA1=$3
+
+# Normally prepare-commit-msg hook don't check diff, but it may be useful for
+# hook(s) in that repository.
+# check agains which commit diff shouuld be checked
+# This code snippet is taken from the git sample prepare-commit hook
+if git rev-parse --verify HEAD >/dev/null 2>&1                                  
+then                                                                            
+    against=HEAD                                                                
+else                                                                            
+    # Initial commit: diff against an empty tree object                         
+    against=$(git hash-object -t tree /dev/null)                                
+fi  
+
+# Git branch also may be useful
+BRANCH=$(git branch --show-current)
+
+# Now get full diff which will be commited
+diff=$(git diff --cached $against)
+
+if [ "$COMMIT_SOURCE" == "merge" ]; then
+    # Don't check merge commits, we don't need to do so
+    exit 0
+fi
+
+for hook in $HOOKS_PATH/*; do
+    "$hook" "$COMMIT_MSG_FILE" "$BRANCH" "$diff"
+done
+
+exit 0
