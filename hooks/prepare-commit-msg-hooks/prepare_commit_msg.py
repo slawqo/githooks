@@ -4,14 +4,17 @@ import json
 import sys
 import os
 import textwrap
+from tkinter import W
 
 import ollama
 
 LINE_LENGTH = 79
 DEBUG_FLAG = "DEBUG_GITHOOKS"
+LLM_MODEL_ENV_VAR="OLLAMA_LLM_MODEL"
+LLM_HOST_ENV_VAR="OLLAMA_HOST"
 
-LLM_MODEL="llama3.1"
-LLM_URL="http://localhost:11434"
+DEFAULT_LLM_MODEL="llama3.1"
+DEFAULT_LLM_URL="http://localhost:11434"
 
 SYSTEM_PROMPT="""
 You are helpful assistant of the software developer. Your job is to analyze
@@ -82,6 +85,20 @@ def is_debug_enabled():
     return debug_flag.lower() in ["1", "yes", "true"]
 
 
+def get_llm_model():
+    llm_model = os.environ.get(LLM_MODEL_ENV_VAR, DEFAULT_LLM_MODEL)
+    if not llm_model:
+        return DEFAULT_LLM_MODEL
+    return llm_model
+
+
+def get_llm_url():
+    llm_host = os.environ.get(LLM_HOST_ENV_VAR, DEFAULT_LLM_URL)
+    if not llm_host:
+        llm_host = DEFAULT_LLM_URL
+    return f"http://{llm_host}"
+
+
 def get_args():
     if len(sys.argv) < 4:
         # no diff or commit message file provided, nothing to do
@@ -124,9 +141,9 @@ def main():
     commit_msg_file, git_branch, diff = get_args()
     input_msg = f"<branch>{git_branch}</branch><diff>{diff}</diff>"
 
-    client = ollama.Client(host=LLM_URL)
+    client = ollama.Client(host=get_llm_url())
     llm_response: ollama.ChatResponse = client.chat(
-        model=LLM_MODEL,
+        model=get_llm_model(),
         stream=False,
         messages=[
             {

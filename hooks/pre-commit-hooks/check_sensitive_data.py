@@ -8,8 +8,11 @@ import ollama
 
 DEBUG_FLAG = "DEBUG_GITHOOKS"
 
-LLM_MODEL="llama3.1"
-LLM_URL="http://localhost:11434"
+LLM_MODEL_ENV_VAR="OLLAMA_LLM_MODEL"
+LLM_HOST_ENV_VAR="OLLAMA_HOST"
+
+DEFAULT_LLM_MODEL="llama3.1"
+DEFAULT_LLM_URL="http://localhost:11434"
 
 SYSTEM_PROMPT="""
 You are a security expert. You are given a diff of changes that are going to be
@@ -156,6 +159,20 @@ def is_debug_enabled():
     return debug_flag.lower() in ["1", "yes", "true"]
 
 
+def get_llm_model():
+    llm_model = os.environ.get(LLM_MODEL_ENV_VAR, DEFAULT_LLM_MODEL)
+    if not llm_model:
+        return DEFAULT_LLM_MODEL
+    return llm_model
+
+
+def get_llm_url():
+    llm_host = os.environ.get(LLM_HOST_ENV_VAR, DEFAULT_LLM_URL)
+    if not llm_host:
+        llm_host = DEFAULT_LLM_URL
+    return f"http://{llm_host}"
+
+
 def get_diff():
     if len(sys.argv) < 2:
         # no diff provided, nothing to check
@@ -169,9 +186,9 @@ def get_diff():
 
 def main():
     diff = get_diff()
-    client = ollama.Client(host=LLM_URL)
+    client = ollama.Client(host=get_llm_url())
     llm_response: ollama.ChatResponse = client.chat(
-        model=LLM_MODEL,
+        model=get_llm_model(),
         stream=False,
         messages=[
             {
